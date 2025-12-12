@@ -52,19 +52,15 @@ jobs:
 
       # Start Docker services for E2E tests
       - name: Start Docker Services (MinIO, Jaeger, App)
-        run: npm run docker:dev &
-        # Ensure the compose file used is the one we modified
-        # Using the npm script ensures all necessary flags are included
-
-      - name: Wait for services to be ready
-        # Wait a fixed time to allow MinIO and App to start
-        run: sleep 10
+        run: |
+          docker compose -f docker/compose.dev.yml up -d
+          sleep 15
 
       # Run E2E Tests inside the App container 
       # Using the full command we successfully ran locally
       - name: Run End-to-End Tests
         run: |
-          docker compose -f docker/compose.dev.yml exec delineate-app npm run test:e2e
+          docker compose -f docker/compose.dev.yml exec -T delineate-app npm run test:e2e
         env:
           # Use default credentials for the test environment
           S3_ACCESS_KEY_ID: minioadmin
