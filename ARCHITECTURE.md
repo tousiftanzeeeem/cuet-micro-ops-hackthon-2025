@@ -72,7 +72,7 @@ Use **WebSockets for fast jobs**, **Polling for long tasks**.
   If a connection breaks, the client reconnects using the existing jobId. The server simply returns the status of the running job rather than spawning a new background worker. This ensures 1 Job = 1 Worker process, regardless of how many times the client disconnects or retries.
 
 ### Disadvantages
-  For large file download during polling , progress bar not updating real time due to latency
+  -For large file download during polling , progress bar not updating real time due to latency
 ---
 
 ## 3. Implementation Details
