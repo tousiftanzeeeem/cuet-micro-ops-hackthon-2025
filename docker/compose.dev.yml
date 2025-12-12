@@ -9,7 +9,6 @@ services:
       - "3000:3000"
     volumes:
       - ../src:/app/src
-      # FIX: Explicitly mount the .env file for the application's runtime
       - ../.env:/app/.env
     env_file:
       - ../.env
