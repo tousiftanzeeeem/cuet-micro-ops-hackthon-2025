@@ -1,4 +1,3 @@
-# ARCHITECTURE.md
 
 ## 1. Architecture Diagram
 
