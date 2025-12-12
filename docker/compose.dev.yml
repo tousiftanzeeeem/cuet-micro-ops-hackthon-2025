@@ -9,13 +9,53 @@ services:
       - "3000:3000"
     volumes:
       - ../src:/app/src
+      # FIX: Explicitly mount the .env file for the application's runtime
+      - ../.env:/app/.env
     env_file:
       - ../.env
     environment:
       - NODE_ENV=development
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
+      # S3 Configuration
+      - S3_ENDPOINT=http://delineate-s3:9000
+      - S3_ACCESS_KEY_ID=minioadmin
+      - S3_SECRET_ACCESS_KEY=minioadmin
+      - S3_BUCKET_NAME=downloads
+      - S3_FORCE_PATH_STYLE=true
     depends_on:
       - delineate-jaeger
+      - delineate-s3
+      - delineate-s3-init
+
+  # 1. Self-Hosted S3 Storage Service (MINIO)
+  delineate-s3:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001" # MinIO Console port
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - delineate-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Bucket Creation Service
+  delineate-s3-init:
+    image: minio/mc
+    depends_on:
+      delineate-s3:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set minio-s3 http://delineate-s3:9000 minioadmin minioadmin;
+      /usr/bin/mc ls minio-s3/downloads || /usr/bin/mc mb minio-s3/downloads;
+      "
 
   delineate-jaeger:
     image: jaegertracing/all-in-one:latest
@@ -24,3 +64,6 @@ services:
       - "4318:4318"
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  delineate-data:
