@@ -73,7 +73,7 @@ jobs:
           S3_ENDPOINT: http://delineate-s3:9000
           S3_FORCE_PATH_STYLE: true
 
-  # Job 2: Docker Build and Tagging
+  # Job 2: Docker Build and Push to Docker Hub
   docker_build:
     needs: [lint_and_test] # Only run if tests passed
     runs-on: ubuntu-latest
@@ -81,6 +81,37 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Build the Production Docker image 
-      - name: Build Docker Image
-        run: docker build -t delineate-prod -f docker/Dockerfile.prod .
+      # Set up Docker Buildx for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Login to Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Extract metadata for Docker tags
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/delineate-hackathon
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build and push the Production Docker image
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
