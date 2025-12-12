@@ -345,7 +345,6 @@ When either protocol returns `status: 'completed'`:
 1. **Extract the downloadUrl** (Presigned RustFS S3 URL).
 2. **Trigger Download:** Create a temporary invisible `<a>` tag with the URL and programmatically `.click()` it.
 
-> **Note:** We do not use `fetch(url)` for the final file. We let the browser handle the binary stream directly from RustFS to ensure resume capability and native behavior.
 
 ---
 
