@@ -1,0 +1,86 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+# Fail fast on errors [cite: 185]
+# Limits concurrent workflow runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Linting and E2E Testing
+  lint_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup Node.js Environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Cache Node modules 
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Run Linting Checks 
+      - name: Run ESLint
+        run: npm run lint
+
+      # Run Format Checks 
+      - name: Run Prettier Check
+        run: npm run format:check
+
+      # Start Docker services for E2E tests
+      - name: Start Docker Services (MinIO, Jaeger, App)
+        run: npm run docker:dev &
+        # Ensure the compose file used is the one we modified
+        # Using the npm script ensures all necessary flags are included
+
+      - name: Wait for services to be ready
+        # Wait a fixed time to allow MinIO and App to start
+        run: sleep 10
+
+      # Run E2E Tests inside the App container 
+      # Using the full command we successfully ran locally
+      - name: Run End-to-End Tests
+        run: |
+          docker compose -f docker/compose.dev.yml exec delineate-app npm run test:e2e
+        env:
+          # Use default credentials for the test environment
+          S3_ACCESS_KEY_ID: minioadmin
+          S3_SECRET_ACCESS_KEY: minioadmin
+          S3_BUCKET_NAME: downloads
+          S3_ENDPOINT: http://delineate-s3:9000
+          S3_FORCE_PATH_STYLE: true
+
+  # Job 2: Docker Build and Tagging
+  docker_build:
+    needs: [lint_and_test] # Only run if tests passed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Build the Production Docker image 
+      - name: Build Docker Image
+        run: docker build -t delineate-prod -f docker/Dockerfile.prod .
