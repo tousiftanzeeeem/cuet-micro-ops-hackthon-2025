@@ -62,7 +62,7 @@ jobs:
         run: |
           docker compose -f docker/compose.dev.yml exec -T delineate-app npm run test:e2e
       - name: Discord Notification on Success
-        if: success()  # This ensures it runs only if previous steps (tests) passed
+        if: success() # This ensures it runs only if previous steps (tests) passed
         uses: appleboy/discord-action@master
         with:
           webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
