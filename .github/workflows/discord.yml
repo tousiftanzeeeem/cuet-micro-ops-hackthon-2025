@@ -1,0 +1,16 @@
+name: CI Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Discord Notification on Success
+        if: success()  # This ensures it runs only if previous steps (tests) passed
+        uses: appleboy/discord-action@master
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+          message: "✅ Tests passed for commit ${{ github.sha }}!"
