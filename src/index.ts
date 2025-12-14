@@ -14,6 +14,10 @@ import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
 
+// Import new download routes
+import downloadRoutes from "./routes/download.ts";
+import { handleWebSocketUpgrade } from "./routes/websocket.ts";
+
 // Helper for optional URL that treats empty string as undefined
 const optionalUrl = z
   .string()
@@ -393,6 +397,16 @@ app.openapi(healthRoute, async (c) => {
     httpStatus,
   );
 });
+
+// ============================================================================
+// NEW: Hybrid WebSocket/Polling Download Routes
+// ============================================================================
+
+// Mount the new download routes for estimate, initiate, and status
+app.route("/v1/download", downloadRoutes);
+
+// WebSocket endpoint for real-time download updates
+app.get("/v1/download/ws", handleWebSocketUpgrade);
 
 // Download API Routes
 const downloadInitiateRoute = createRoute({

@@ -111,3 +111,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [docker_build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            # Navigate to application directory
+            cd ${{ secrets.DEPLOY_PATH || '/opt/delineate-app' }}
+
+            # Pull the latest Docker image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/delineate-hackathon:latest
+
+            # Stop and remove old container
+            docker compose -f docker/compose.prod.yml down || true
+
+            # Pull latest code (optional - if you have docker-compose on server)
+            git pull origin main || true
+
+            # Start new container with updated image
+            docker compose -f docker/compose.prod.yml up -d
+
+            # Clean up old images
+            docker image prune -f
+
+            # Show running containers
+            docker ps
+
+            echo "✅ Deployment completed successfully!"

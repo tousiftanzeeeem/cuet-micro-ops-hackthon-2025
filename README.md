@@ -1,5 +1,68 @@
 # Delineate Hackathon Challenge - CUET Fest 2025
 
+## 🎯 Project Overview
+
+This project implements a **Hybrid WebSocket/Polling Architecture** for handling long-running file downloads. It includes:
+
+- **Backend API** (Node.js + Hono) - Handles download requests with smart protocol selection
+- **React Frontend** - Beautiful UI with real-time progress updates
+- **Docker Setup** - Full stack with MinIO S3 storage and Jaeger tracing
+- **CI/CD Pipeline** - GitHub Actions with Docker Hub deployment
+
+## 🚀 Quick Start
+
+### Backend + Frontend (Development)
+
+```bash
+# Install backend dependencies
+npm install
+
+# Install frontend dependencies
+cd client
+npm install
+cd ..
+
+# Start backend with Docker (includes MinIO, Jaeger)
+npm run docker:dev
+
+# In another terminal, start React frontend
+cd client
+npm run dev
+```
+
+Access:
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- API Docs: http://localhost:3000/docs
+- MinIO Console: http://localhost:9001
+
+### Production Build
+
+```bash
+# Build and run production containers
+npm run docker:prod
+```
+
+## 📁 Project Structure
+
+```
+.
+├── client/                  # React frontend (Vite + TypeScript)
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   ├── hooks/          # useDownload hook
+│   │   ├── services/       # API client
+│   │   └── types/          # TypeScript types
+│   └── README.md           # Frontend documentation
+├── src/                    # Backend API (Hono)
+├── docker/                 # Docker configurations
+├── .github/workflows/      # CI/CD pipelines
+├── ARCHITECTURE.md         # Architecture documentation
+├── BACKEND_GUIDE.md        # Backend implementation guide
+└── README.md              # This file
+```
+
 ## The Scenario
 
 This microservice simulates a **real-world file download system** where processing times vary significantly:
